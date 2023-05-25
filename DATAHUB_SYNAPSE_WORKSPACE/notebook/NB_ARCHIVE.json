@@ -18,7 +18,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "ad3f03d1-0f9e-4ffe-a326-ebc7ecf77b17"
+				"spark.autotune.trackingId": "99ea8067-1a9f-4414-b164-35b5635b5449"
 			}
 		},
 		"metadata": {
@@ -34,16 +34,10 @@
 			"a365ComputeOptions": {
 				"id": "/subscriptions/d28b0a8d-0b16-416b-a51a-618a5a752781/resourceGroups/rg-as-dmaic-prod/providers/Microsoft.Synapse/workspaces/az-tsa-as-dmaic-prod-synapse-01/bigDataPools/azprodspkpool01",
 				"name": "azprodspkpool01",
-				"type": "Spark",
-				"endpoint": "https://az-tsa-as-dmaic-prod-synapse-01.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/azprodspkpool01",
 				"auth": {
 					"type": "AAD",
 					"authResource": "https://dev.azuresynapse.net"
-				},
-				"sparkVersion": "3.2",
-				"nodeCount": 3,
-				"cores": 4,
-				"memory": 28
+				}
 			},
 			"sessionKeepAliveTimeout": 30
 		},
@@ -65,7 +59,7 @@
 					]
 				},
 				"source": [
-					"filePath = 'abfss://qmi-mappings@asdevdmaicstor01.dfs.core.windows.net/qmi-mappingsLand/QMI_Reporting_Mappings.xlsx'\r\n",
+					"filePath = ''\r\n",
 					"archive = 1"
 				],
 				"execution_count": 1
