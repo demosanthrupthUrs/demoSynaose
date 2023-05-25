@@ -1,0 +1,10 @@
+{
+	"name": "synapse-ws-sqlOnDemand--az-tsa-as-dmaic-prod-synapse-01",
+	"properties": {
+		"privateLinkResourceId": "/subscriptions/d28b0a8d-0b16-416b-a51a-618a5a752781/resourceGroups/rg-as-dmaic-prod/providers/Microsoft.Synapse/workspaces/az-tsa-as-dmaic-prod-synapse-01",
+		"groupId": "sqlOnDemand",
+		"fqdns": [
+			"az-tsa-as-dmaic-prod-synapse-01-ondemand.d868a53d-5057-4aee-8587-dda56c589e12.sql.azuresynapse.net"
+		]
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"name": "synapse-ws-custstgacct--az-tsa-as-dmaic-test-synapse-01-astestdmaicstor01",
+	"properties": {
+		"privateLinkResourceId": "/subscriptions/69d6b234-284d-415e-99f7-730e312201f6/resourceGroups/rg-ase-dmaic-test/providers/Microsoft.Storage/storageAccounts/astestdmaicstor01",
+		"groupId": "dfs",
+		"fqdns": [
+			"astestdmaicstor01.dfs.core.windows.net"
+		]
+	}
+}

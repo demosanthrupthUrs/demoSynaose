@@ -1,0 +1,10 @@
+{
+	"name": "synapse-ws-custstgacct--az-tsa-as-dmaic-prod-synapse-01-asproddmaicstor01",
+	"properties": {
+		"privateLinkResourceId": "/subscriptions/d28b0a8d-0b16-416b-a51a-618a5a752781/resourceGroups/rg-as-dmaic-prod/providers/Microsoft.Storage/storageAccounts/asproddmaicstor01",
+		"groupId": "dfs",
+		"fqdns": [
+			"asproddmaicstor01.dfs.core.windows.net"
+		]
+	}
+}

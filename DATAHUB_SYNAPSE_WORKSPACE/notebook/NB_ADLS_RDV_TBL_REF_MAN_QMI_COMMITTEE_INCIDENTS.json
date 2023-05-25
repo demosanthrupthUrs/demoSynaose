@@ -1,0 +1,264 @@
+{
+	"name": "NB_ADLS_RDV_TBL_REF_MAN_QMI_COMMITTEE_INCIDENTS",
+	"properties": {
+		"folder": {
+			"name": "QMI"
+		},
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "azprodspkpool01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "5808a624-d915-42f9-8858-4e8ea442a43d"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/d28b0a8d-0b16-416b-a51a-618a5a752781/resourceGroups/rg-as-dmaic-prod/providers/Microsoft.Synapse/workspaces/az-tsa-as-dmaic-prod-synapse-01/bigDataPools/azprodspkpool01",
+				"name": "azprodspkpool01",
+				"type": "Spark",
+				"endpoint": "https://az-tsa-as-dmaic-prod-synapse-01.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/azprodspkpool01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.2",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"tags": [
+						"parameters"
+					]
+				},
+				"source": [
+					"filePath = 'https://asdevdmaicstor01.dfs.core.windows.net/committee/committeeLand/Committee_Dashboards_Incidents_202105_202204_20220622.xlsx'\r\n",
+					"sasToken = '?sv=2020-10-02&ss=btqf&srt=sco&st=2022-07-05T06%3A47%3A14Z&se=2040-06-01T06%3A47%3A00Z&sp=rwdxl&sig=mBl%2Bl3Phz%2Bhgt7gg3i2EWueohnIlM%2B8tbBUwIvWwTy8%3D'\r\n",
+					"sheetName = 'Incidents'\r\n",
+					"etlRunID = '1'\r\n",
+					"tableName = 'TBL_REF_MAN_QMI_COMMITTEE_INCIDENTS'\r\n",
+					"schema = 'RDV'\r\n",
+					"database = 'aztsaasdmaicdevsqlpools01'\r\n",
+					"server = 'az-tsa-as-dmaic-dev-synapse-01.sql.azuresynapse.net'"
+				],
+				"execution_count": 15
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"%run /NB_ADLS_RDV_COMMON"
+				],
+				"execution_count": 16
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"path, fileName = os.path.split(filePath)\r\n",
+					"tempTableName, etlLoadID, strloadTime = setTemptableTime(fileName)"
+				],
+				"execution_count": 17
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"strSQL = (\"SELECT \\n\" \r\n",
+					"\"\\tCONCAT(Reporting_Period,'|',Incident_ID) as MAN_QMI_COMMITTEE_INCIDENTS_BK\\n\"\r\n",
+					"\"\\t,Source as SOURCE_NAME\\n\"\r\n",
+					"\"\\t,Reporting_Period as REPORTING_PERIOD_NAME\\n\"\r\n",
+					"\"\\t,Incident_ID as INCIDENT_ID\\n\"\r\n",
+					"\"\\t,Source_Incident_ID as SOURCE_INCIDENT_ID\\n\"\r\n",
+					"\"\\t,Date_of_Incident as INCIDENT_DATE\\n\"\r\n",
+					"\"\\t,Mission_Expression as MISSION_EXPRESSION\\n\"\r\n",
+					"\"\\t,Stream_Department as STREAM_DEPARTMENT\\n\"\r\n",
+					"\"\\t,Specific_Stream as SPECIFIC_STREAM\\n\"\r\n",
+					"\"\\t,Site_Name as SITE_NAME\\n\"\r\n",
+					"\"\\t,State as STATE_CODE\\n\"\r\n",
+					"\"\\t,Incident_Description as INCIDENT_DESCRIPTION\\n\"\r\n",
+					"\"\\t,Client_Involvement_Type as CLIENT_INVOLVEMENT_TYPE\\n\"\r\n",
+					"\"\\t,Incident_Group as INCIDENT_GROUP\\n\"\r\n",
+					"\"\\t,Incident_Type as INCIDENT_TYPE\\n\"\r\n",
+					"\"\\t,Incident_Category as INCIDENT_CATEGORY\\n\"\r\n",
+					"\"\\t,Actions_Taken as ACTIONS\\n\"\r\n",
+					"\"\\t,Status as STATUS\\n\"\r\n",
+					"\"\\t,Appendix_Flag as APPENDIX_FLAG\\n\"\r\n",
+					"\r\n",
+					"\"\\t,'SolvSafety' as ETL_RECORD_SOURCE\\n\"\r\n",
+					"\"\\t,true AS ETL_RECORD_IS_ACTIVE\\n\"\r\n",
+					"\"\\t,'A' as ETL_RECORD_STATUS\\n\"\r\n",
+					"\"\\t,'\"+ etlRunID +\"' as ETL_INSERT_RUN_ID\\n\"\r\n",
+					"\"\\t,'\"+ etlRunID +\"' as ETL_UPDATE_RUN_ID\\n\"\r\n",
+					"\"\\t,to_timestamp('\"+strloadTime+\"') as ETL_RECORD_INSERT_DATETIME\\n\"\r\n",
+					"\"\\t,to_timestamp('\"+strloadTime+\"') as ETL_RECORD_UPDATE_DATETIME\\n\"\r\n",
+					"\"\\t,'\"+etlLoadID+\"' AS ETL_LOAD_ID\\n\"\r\n",
+					"\"FROM\\n\"\r\n",
+					"\"\\t \"+tempTableName)\r\n",
+					""
+				],
+				"execution_count": 18
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"path = filePath + sasToken\r\n",
+					"pdf = readexcel(path,sheetName)\r\n",
+					"pdf = pdf.replace({np.nan: None})\r\n",
+					"\r\n",
+					"pdf_schema = StructType([StructField(\"Source\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Reporting_Period\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Incident_ID\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Source_Incident_ID\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Date_of_Incident\", DateType(), True)\\\r\n",
+					"                    ,StructField(\"Mission_Expression\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Stream_Department\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Specific_Stream\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Site_Name\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"State\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Incident_Description\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Client_Involvement_Type\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Incident_Group\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Incident_Type\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Incident_Category\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Actions_Taken\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Status\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Appendix_Flag\", StringType(), True)])\r\n",
+					"\r\n",
+					"df = spark.createDataFrame(pdf, schema=pdf_schema)\r\n",
+					"\r\n",
+					"df.createOrReplaceTempView(tempTableName)\r\n",
+					"sqlDF = spark.sql(strSQL)\r\n",
+					""
+				],
+				"execution_count": 19
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dfInsert = set_df_columns_nullable(spark,sqlDF,['MAN_QMI_COMMITTEE_INCIDENTS_BK','REPORTING_PERIOD_NAME','INCIDENT_ID','ETL_RECORD_INSERT_DATETIME'],False)\r\n",
+					"dfInsert = set_df_columns_nullable(spark,dfInsert,['ETL_INSERT_RUN_ID','ETL_UPDATE_RUN_ID'],True)"
+				],
+				"execution_count": 20
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"insertTarget(dfInsert,server,database,schema,tableName,'append')"
+				],
+				"execution_count": 21
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"rowsRead,rowsWritten = reconInsert(dfInsert,server,database,schema,tableName,etlRunID)\r\n",
+					"outputRows = str(rowsRead)+'|'+str(rowsWritten)\r\n",
+					"mssparkutils.notebook.exit(outputRows) "
+				],
+				"execution_count": 22
+			}
+		]
+	}
+}

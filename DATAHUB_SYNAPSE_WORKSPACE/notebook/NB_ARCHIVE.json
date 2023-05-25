@@ -1,0 +1,147 @@
+{
+	"name": "NB_ARCHIVE",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "azprodspkpool01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "ad3f03d1-0f9e-4ffe-a326-ebc7ecf77b17"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/d28b0a8d-0b16-416b-a51a-618a5a752781/resourceGroups/rg-as-dmaic-prod/providers/Microsoft.Synapse/workspaces/az-tsa-as-dmaic-prod-synapse-01/bigDataPools/azprodspkpool01",
+				"name": "azprodspkpool01",
+				"type": "Spark",
+				"endpoint": "https://az-tsa-as-dmaic-prod-synapse-01.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/azprodspkpool01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.2",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"tags": [
+						"parameters"
+					]
+				},
+				"source": [
+					"filePath = 'abfss://qmi-mappings@asdevdmaicstor01.dfs.core.windows.net/qmi-mappingsLand/QMI_Reporting_Mappings.xlsx'\r\n",
+					"archive = 1"
+				],
+				"execution_count": 1
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from notebookutils import mssparkutils\r\n",
+					"from datetime import date, datetime\r\n",
+					"import pytz"
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"tz = pytz.timezone('Australia/Sydney')\r\n",
+					"loadTime = datetime.now(tz)\r\n",
+					"filePathList = filePath.split('/')\r\n",
+					"fileNameList = filePathList[len(filePathList)-1].split('.')\r\n",
+					"\r\n",
+					"fileName = '.'.join(fileNameList[0:len(fileNameList)-1]) + \"_\" + loadTime.strftime(\"%Y%m%d%H%M%S\") + '.' + fileNameList[len(fileNameList)-1]\r\n",
+					"print(fileName)"
+				],
+				"execution_count": 46
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"if (archive == 1):\r\n",
+					"    today = date.today()\r\n",
+					"    filePathList = filePath.split('/')\r\n",
+					"    filePathList[3] = filePathList[3].replace('Land','')+'Archive/'+loadTime.strftime(\"%Y/%m/%d\")\r\n",
+					"    filePathList[len(filePathList)-1] = fileName\r\n",
+					"    fileArchivePath = '/'.join(filePathList)\r\n",
+					"    #print (fileArchivePath)\r\n",
+					"    mssparkutils.fs.mv(filePath, fileArchivePath, True)    \r\n",
+					"else:\r\n",
+					"    mssparkutils.notebook.exit('No file found/override is true')"
+				],
+				"execution_count": 47
+			}
+		]
+	}
+}

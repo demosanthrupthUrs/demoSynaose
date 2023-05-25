@@ -1,0 +1,10 @@
+{
+	"name": "synapse-ws-sql--az-tsa-as-dmaic-test-synapse-01",
+	"properties": {
+		"privateLinkResourceId": "/subscriptions/69d6b234-284d-415e-99f7-730e312201f6/resourceGroups/rg-ase-dmaic-test/providers/Microsoft.Synapse/workspaces/az-tsa-as-dmaic-test-synapse-01",
+		"groupId": "sql",
+		"fqdns": [
+			"az-tsa-as-dmaic-test-synapse-01.ecfaf5db-5fde-412a-aea2-3f89c626ab0c.sql.azuresynapse.net"
+		]
+	}
+}

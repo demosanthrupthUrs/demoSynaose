@@ -1,0 +1,25 @@
+{
+	"name": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+	"type": "Microsoft.Synapse/workspaces/linkedservices",
+	"properties": {
+		"parameters": {
+			"serverName": {
+				"type": "String",
+				"defaultValue": "az-tsa-as-dmaic-test-synapse-01.sql.azuresynapse.net"
+			},
+			"databaseName": {
+				"type": "String",
+				"defaultValue": "aztsaasdmaictestsqlpools01"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlDW",
+		"typeProperties": {
+			"connectionString": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=@{linkedService().serverName};Initial Catalog=@{linkedService().databaseName}"
+		},
+		"connectVia": {
+			"referenceName": "AutoResolveIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

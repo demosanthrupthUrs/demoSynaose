@@ -1,0 +1,51 @@
+{
+	"name": "SOLV_PARQUET",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AZ_TSA_ADLS_BLOB_01",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"accountName": {
+					"value": "@dataset().accountName",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"filePattern": {
+				"type": "string"
+			},
+			"container": {
+				"type": "string"
+			},
+			"fileFolder": {
+				"type": "string"
+			},
+			"accountName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().filePattern",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().fileFolder",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().container",
+					"type": "Expression"
+				}
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

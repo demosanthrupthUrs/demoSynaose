@@ -1,0 +1,235 @@
+{
+	"name": "NB_ADLS_RDV_TBL_REF_MAN_QMI_FEEDBACK_GROUP",
+	"properties": {
+		"folder": {
+			"name": "QMI"
+		},
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "azprodspkpool01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "2c1b1e0c-af0c-4fc9-9e89-f1ef0d103e17"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/d28b0a8d-0b16-416b-a51a-618a5a752781/resourceGroups/rg-as-dmaic-prod/providers/Microsoft.Synapse/workspaces/az-tsa-as-dmaic-prod-synapse-01/bigDataPools/azprodspkpool01",
+				"name": "azprodspkpool01",
+				"type": "Spark",
+				"endpoint": "https://az-tsa-as-dmaic-prod-synapse-01.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/azprodspkpool01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.2",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"tags": [
+						"parameters"
+					]
+				},
+				"source": [
+					"filePath = 'https://asdevdmaicstor01.dfs.core.windows.net/qmi-mappings/qmi-mappingsLand/QMI_Reporting_Mappings.xlsx'\r\n",
+					"sasToken = '?sv=2020-10-02&ss=btqf&srt=sco&st=2022-07-05T06%3A47%3A14Z&se=2040-06-01T06%3A47%3A00Z&sp=rwdxl&sig=mBl%2Bl3Phz%2Bhgt7gg3i2EWueohnIlM%2B8tbBUwIvWwTy8%3D'\r\n",
+					"sheetName = 'Feedback_Group'\r\n",
+					"etlRunID = '1'\r\n",
+					"tableName = 'TBL_REF_MAN_QMI_FEEDBACK_GROUP'\r\n",
+					"schema = 'RDV'\r\n",
+					"database = 'aztsaasdmaicdevsqlpools01'\r\n",
+					"server = 'az-tsa-as-dmaic-dev-synapse-01.sql.azuresynapse.net'"
+				],
+				"execution_count": 34
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"%run /NB_ADLS_RDV_COMMON"
+				],
+				"execution_count": 35
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"path, fileName = os.path.split(filePath)\r\n",
+					"tempTableName, etlLoadID, strloadTime = setTemptableTime(fileName)"
+				],
+				"execution_count": 36
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"strSQL = (\"SELECT \\n\" \r\n",
+					"\"Original_Feedback_Group_Desc as MAN_QMI_FEEDBACK_GROUP_BK\\n\"\r\n",
+					"\"\\t,Original_Feedback_Group_Desc as ORIGINAL_FEEDBACK_GROUP_DESC\\n\"\r\n",
+					"\"\\t,Short_Feedback_Group_Desc as SHORT_FEEDBACK_GROUP_DESC\\n\"\r\n",
+					"\r\n",
+					"\"\\t,'Manual' as ETL_RECORD_SOURCE\\n\"\r\n",
+					"\"\\t,true AS ETL_RECORD_IS_ACTIVE\\n\"\r\n",
+					"\"\\t,'A' as ETL_RECORD_STATUS\\n\"\r\n",
+					"\"\\t,'\"+ etlRunID +\"' as ETL_INSERT_RUN_ID\\n\"\r\n",
+					"\"\\t,'\"+ etlRunID +\"' as ETL_UPDATE_RUN_ID\\n\"\r\n",
+					"\"\\t,to_timestamp('\"+strloadTime+\"') as ETL_RECORD_INSERT_DATETIME\\n\"\r\n",
+					"\"\\t,to_timestamp('\"+strloadTime+\"') as ETL_RECORD_UPDATE_DATETIME\\n\"\r\n",
+					"\"\\t,'\"+etlLoadID+\"' AS ETL_LOAD_ID\\n\"\r\n",
+					"\"FROM\\n\"\r\n",
+					"\"\\t \"+tempTableName)\r\n",
+					""
+				],
+				"execution_count": 37
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"collapsed": false
+				},
+				"source": [
+					"path = filePath + sasToken\r\n",
+					"pdf = readexcel(path,sheetName)\r\n",
+					"pdf = pdf.replace({np.nan: None})\r\n",
+					"\r\n",
+					"pdf_schema = StructType([StructField(\"Original_Feedback_Group_Desc\", StringType(), True)\\\r\n",
+					"                    ,StructField(\"Short_Feedback_Group_Desc\", StringType(), True)])\r\n",
+					"\r\n",
+					"\r\n",
+					"df = spark.createDataFrame(pdf, schema=pdf_schema)\r\n",
+					"\r\n",
+					"df.createOrReplaceTempView(tempTableName)\r\n",
+					"sqlDF = spark.sql(strSQL)\r\n",
+					"#display(sqlDF)"
+				],
+				"execution_count": 38
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dfInsert = set_df_columns_nullable(spark,sqlDF,['MAN_QMI_FEEDBACK_GROUP_BK','ORIGINAL_FEEDBACK_GROUP_DESC','ETL_RECORD_INSERT_DATETIME'],False)\r\n",
+					"dfInsert = set_df_columns_nullable(spark,dfInsert,['ETL_UPDATE_RUN_ID','ETL_INSERT_RUN_ID'],True)"
+				],
+				"execution_count": 39
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"collapsed": false
+				},
+				"source": [
+					"insertTarget(dfInsert,server,database,schema,tableName,'append')"
+				],
+				"execution_count": 40
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"rowsRead,rowsWritten = reconInsert(dfInsert,server,database,schema,tableName,etlRunID)\r\n",
+					"outputRows = str(rowsRead)+'|'+str(rowsWritten)\r\n",
+					"mssparkutils.notebook.exit(outputRows) "
+				],
+				"execution_count": 48
+			}
+		]
+	}
+}

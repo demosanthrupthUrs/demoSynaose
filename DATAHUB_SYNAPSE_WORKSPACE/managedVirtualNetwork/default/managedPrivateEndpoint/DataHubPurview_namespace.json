@@ -1,0 +1,7 @@
+{
+	"name": "DataHubPurview_namespace",
+	"properties": {
+		"privateLinkResourceId": "/subscriptions/d28b0a8d-0b16-416b-a51a-618a5a752781/resourceGroups/managed-rg-az-tsa-ae-dmaic-purview-prod-01/providers/Microsoft.EventHub/namespaces/Atlas-d537bd8a-ae84-4b4b-af19-2429467b383f",
+		"groupId": "namespace"
+	}
+}

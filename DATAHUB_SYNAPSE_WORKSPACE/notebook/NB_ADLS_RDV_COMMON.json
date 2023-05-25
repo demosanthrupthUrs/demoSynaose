@@ -1,0 +1,243 @@
+{
+	"name": "NB_ADLS_RDV_COMMON",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "azprodspkpool01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "6d17e43f-b563-43fd-9ab7-e557ef1c9aaa"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/d28b0a8d-0b16-416b-a51a-618a5a752781/resourceGroups/rg-as-dmaic-prod/providers/Microsoft.Synapse/workspaces/az-tsa-as-dmaic-prod-synapse-01/bigDataPools/azprodspkpool01",
+				"name": "azprodspkpool01",
+				"type": "Spark",
+				"endpoint": "https://az-tsa-as-dmaic-prod-synapse-01.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/azprodspkpool01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.2",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"from pyspark.sql import functions as sf\r\n",
+					"from datetime import datetime\r\n",
+					"import com.microsoft.spark.sqlanalytics\r\n",
+					"from com.microsoft.spark.sqlanalytics.Constants import Constants\r\n",
+					"from pyspark.sql.functions import col\r\n",
+					"import pytz\r\n",
+					"import os\r\n",
+					"import pandas as pd\r\n",
+					"from datetime import datetime\r\n",
+					"from pyspark.sql.types import *\r\n",
+					"import numpy as np\r\n",
+					"import re"
+				],
+				"execution_count": 54
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def set_df_columns_nullable(spark, df, column_list, nullable):\r\n",
+					"    for struct_field in df.schema:\r\n",
+					"        if struct_field.name in column_list:\r\n",
+					"            struct_field.nullable = nullable\r\n",
+					"    df_mod = spark.createDataFrame(df.rdd, df.schema)\r\n",
+					"    return df_mod"
+				],
+				"execution_count": 55
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def setTemptableTime(fileName):\r\n",
+					"\ttempTableName = fileName.replace('PRES_','').replace('.parquet','').replace('.xlsx','').replace('.xls','').replace('.csv','')\r\n",
+					"\ttempTableName = ''.join([i for i in tempTableName if not i.isdigit()]).replace('_','')\r\n",
+					"\ttz = pytz.timezone('Australia/Sydney')\r\n",
+					"\tloadTime = datetime.now(tz)\r\n",
+					"\tif bool(re.search(r'_\\d{14}\\.', fileName)):\r\n",
+					"\t\tetlLoadID = re.search(r'_\\d{14}\\.', fileName)[0][1:9] + \"_\" + re.search(r'_\\d{14}\\.', fileName)[0][9:15]\r\n",
+					"\telif bool(re.search(r'_\\d{8}_\\d{6}\\.', fileName)):\r\n",
+					"\t\tetlLoadID = re.search(r'_\\d{8}_\\d{6}\\.', fileName)[0][1:16]\r\n",
+					"\telif bool(re.search(r'_\\d{8}\\.', fileName)):\r\n",
+					"\t\tetlLoadID = re.search(r'_\\d{8}\\.', fileName)[0][1:9] + loadTime.strftime(\"_%H%M%S\")\r\n",
+					"\telse:\r\n",
+					"\t\tetlLoadID = loadTime.strftime(\"%Y%m%d_%H%M%S\")\r\n",
+					"\t\r\n",
+					"\tstrloadTime = loadTime.strftime(\"%Y-%m-%d %H:%M:%S\")\r\n",
+					"\treturn tempTableName, etlLoadID, strloadTime"
+				],
+				"execution_count": 56
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def truncateTable(server,database,schema,tableName):\r\n",
+					"    fullTblname = database+'.'+schema+'.'+tableName\r\n",
+					"    spark.sql(\"TRUNCATE TABLE \"+fullTableName)"
+				],
+				"execution_count": 57
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def insertTarget(dfInsert,server,database,schema,tableName,mode):\r\n",
+					"    fullTblname = database+'.'+schema+'.'+tableName\r\n",
+					"    (dfInsert.write\r\n",
+					"    .option(Constants.SERVER, server)\r\n",
+					"    .mode(mode)\r\n",
+					"    .synapsesql(fullTblname))"
+				],
+				"execution_count": 58
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def readexcel(path,sheetName):\r\n",
+					"    if sheetName=='':\r\n",
+					"        ReadExcel=pd.read_excel(path)\r\n",
+					"    else:\r\n",
+					"        ReadExcel=pd.read_excel(path,sheet_name=sheetName)\r\n",
+					"    return ReadExcel"
+				],
+				"execution_count": 59
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def reconInsert(dfInsert,server,database,schema,tableName,etlRunID):\r\n",
+					"    rowsRead = dfInsert.count()\r\n",
+					"    \r\n",
+					"    fullTableName = database+'.'+schema+'.'+tableName\r\n",
+					"    strWhere = \"ETL_INSERT_RUN_ID = '\"+etlRunID+\"'\"\r\n",
+					"\r\n",
+					"    dfToReadFromTable = (spark.read.option(Constants.SERVER, server).synapsesql(fullTableName).select(\"*\").where(strWhere))\r\n",
+					"    rowsWritten = dfToReadFromTable.count()\r\n",
+					"    \r\n",
+					"    return rowsRead,rowsWritten"
+				],
+				"execution_count": 60
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def reconExcelInsert(dfInsert,sheetName,filePath):\r\n",
+					"    rowsRead = dfInsert.count()\r\n",
+					"    df = spark.read.format(\"com.crealytics.spark.excel\").option(\"dataAddress\", \"'\" + sheetName + \"'!A1\").option(\"useHeader\",\"true\").load(filePath)\r\n",
+					"    rowsWritten = df.count()\r\n",
+					"    return rowsRead,rowsWritten"
+				],
+				"execution_count": 61
+			}
+		]
+	}
+}

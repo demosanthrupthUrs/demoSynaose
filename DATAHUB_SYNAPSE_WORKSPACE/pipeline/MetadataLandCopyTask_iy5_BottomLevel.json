@@ -1,0 +1,905 @@
+{
+	"name": "MetadataLandCopyTask_iy5_BottomLevel",
+	"properties": {
+		"description": "This pipeline will copy objects from one group. The objects belonging to this group will be copied parallelly.",
+		"activities": [
+			{
+				"name": "ListObjectsFromOneGroup",
+				"description": "List objects from one group and iterate each of them to downstream activities",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "SET_ETL_RUNTIME",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.ObjectsPerGroupToCopy",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "RouteJobsBasedOnLoadingBehavior",
+							"description": "Check the loading behavior for each object if it requires full load or incremental load. If it is Default or FullLoad case, do full load. If it is DeltaLoad case, do incremental load.",
+							"type": "Switch",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"on": {
+									"value": "@json(item().DataLoadingBehaviorSettings).dataLoadingBehavior",
+									"type": "Expression"
+								},
+								"cases": [
+									{
+										"value": "FullLoad",
+										"activities": [
+											{
+												"name": "FullLoadOneObject",
+												"description": "Take a full snapshot on this object and copy it to the destination",
+												"type": "Copy",
+												"dependsOn": [
+													{
+														"activity": "START_LOG",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [
+													{
+														"name": "Source",
+														"value": "@{json(item().SourceObjectSettings).schema}.@{json(item().SourceObjectSettings).table}"
+													},
+													{
+														"name": "Destination",
+														"value": "@{json(item().SinkObjectSettings).fileSystem}/@{json(item().SinkObjectSettings).folderPath}/@{json(item().SinkObjectSettings).fileName}"
+													}
+												],
+												"typeProperties": {
+													"source": {
+														"type": "AzureSqlSource",
+														"queryTimeout": "02:00:00",
+														"partitionOption": "None",
+														"partitionSettings": {
+															"partitionNames": "@json(item().CopySourceSettings).partitionNames"
+														}
+													},
+													"sink": {
+														"type": "ParquetSink",
+														"storeSettings": {
+															"type": "AzureBlobFSWriteSettings"
+														},
+														"formatSettings": {
+															"type": "ParquetWriteSettings"
+														}
+													},
+													"enableStaging": false,
+													"translator": {
+														"value": "@json(item().CopyActivitySettings).translator",
+														"type": "Expression"
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "MetadataLandCopyTask_iy5_SourceDS",
+														"type": "DatasetReference",
+														"parameters": {
+															"cw_schema": {
+																"value": "@json(item().SourceObjectSettings).schema",
+																"type": "Expression"
+															},
+															"cw_table": {
+																"value": "@json(item().SourceObjectSettings).table",
+																"type": "Expression"
+															}
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "MetadataLandCopyTask_iy5_DestinationDS",
+														"type": "DatasetReference",
+														"parameters": {
+															"cw_fileName": {
+																"value": "@concat(substring(json(item().SinkObjectSettings).fileName,0,indexOf(json(item().SinkObjectSettings).fileName,'.')),'_',formatDateTime(convertTimeZone(utcnow(),'UTC','AUS Eastern Standard Time'),'yyyyMMddHHmmss'),substring(json(item().SinkObjectSettings).fileName,indexof(json(item().SinkObjectSettings).fileName,'.'),sub(length(json(item().SinkObjectSettings).fileName),indexof(json(item().SinkObjectSettings).fileName,'.'))))",
+																"type": "Expression"
+															},
+															"cw_folderPath": {
+																"value": "@json(item().SinkObjectSettings).folderPath",
+																"type": "Expression"
+															},
+															"cw_fileSystem": {
+																"value": "@json(item().SinkObjectSettings).fileSystem",
+																"type": "Expression"
+															},
+															"accountName": {
+																"value": "@pipeline().parameters.accountName",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"name": "START_LOG",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "FullLoadOneObject",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": {
+																"value": "@concat(json(item().SourceObjectSettings).table,'-',variables('fullPath'))",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Start",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@pipeline().parameters.serverName",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@pipeline().parameters.databaseName",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "END_LOG_SUCCESS",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "FullLoadOneObject",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "FullLoadOneObject",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": {
+																"value": "@int(activity('FullLoadOneObject').output.rowsRead)\n\t",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": {
+																"value": "@int(activity('FullLoadOneObject').output.rowsCopied)",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": {
+																"value": "@concat(json(item().SourceObjectSettings).table,'-',concat(substring(json(item().SinkObjectSettings).fileName,0,indexOf(json(item().SinkObjectSettings).fileName,'.')),'_',formatDateTime(convertTimeZone(utcnow(),'UTC','AUS Eastern Standard Time'),'yyyyMMddHHmmss'),substring(json(item().SinkObjectSettings).fileName,indexof(json(item().SinkObjectSettings).fileName,'.'),sub(length(json(item().SinkObjectSettings).fileName),indexof(json(item().SinkObjectSettings).fileName,'.')))))",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Success",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": {
+																"value": "@int(activity('FullLoadOneObject').output.rowsRead)",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": {
+																"value": "@int(activity('FullLoadOneObject').output.rowsCopied)",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": {
+																"value": "@equals(int(activity('FullLoadOneObject').output.rowsRead),int(activity('FullLoadOneObject').output.rowsCopied))",
+																"type": "Expression"
+															},
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@pipeline().parameters.serverName",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@pipeline().parameters.databaseName",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "END_LOG_FAILURE",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "FullLoadOneObject",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "FullLoadOneObject",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": {
+																"value": "@activity('FullLoadOneObject').Error.Message",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Failure",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@pipeline().parameters.serverName",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@pipeline().parameters.databaseName",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									}
+								],
+								"defaultActivities": [
+									{
+										"name": "DefaultFullLoadOneObject",
+										"description": "Take a full snapshot on this object and copy it to the destination",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "7.00:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [
+											{
+												"name": "Source",
+												"value": "@{json(item().SourceObjectSettings).schema}.@{json(item().SourceObjectSettings).table}"
+											},
+											{
+												"name": "Destination",
+												"value": "@{json(item().SinkObjectSettings).fileSystem}/@{json(item().SinkObjectSettings).folderPath}/@{json(item().SinkObjectSettings).fileName}"
+											}
+										],
+										"typeProperties": {
+											"source": {
+												"type": "ParquetSource",
+												"storeSettings": {
+													"type": "AzureBlobFSReadSettings",
+													"recursive": true,
+													"enablePartitionDiscovery": false
+												},
+												"partitionSettings": {
+													"partitionNames": "@json(item().CopySourceSettings).partitionNames"
+												}
+											},
+											"sink": {
+												"type": "ParquetSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												},
+												"formatSettings": {
+													"type": "ParquetWriteSettings"
+												}
+											},
+											"enableStaging": false,
+											"validateDataConsistency": false,
+											"translator": {
+												"value": "@json(item().CopyActivitySettings).translator",
+												"type": "Expression"
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "MetadataLandCopyTask_iy5_DestinationDS",
+												"type": "DatasetReference",
+												"parameters": {
+													"cw_fileName": {
+														"value": "@variables('fileName')",
+														"type": "Expression"
+													},
+													"cw_folderPath": {
+														"value": "@variables('fullPath')",
+														"type": "Expression"
+													},
+													"cw_fileSystem": {
+														"value": "@variables('fileext')",
+														"type": "Expression"
+													},
+													"accountName": {
+														"value": "@pipeline().parameters.accountName",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "MetadataLandCopyTask_iy5_DestinationDS",
+												"type": "DatasetReference",
+												"parameters": {
+													"cw_fileName": {
+														"value": "@json(item().SinkObjectSettings).fileName",
+														"type": "Expression"
+													},
+													"cw_folderPath": {
+														"value": "@json(item().SinkObjectSettings).folderPath",
+														"type": "Expression"
+													},
+													"cw_fileSystem": {
+														"value": "@json(item().SinkObjectSettings).fileSystem",
+														"type": "Expression"
+													},
+													"accountName": {
+														"value": "@pipeline().parameters.accountName",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									}
+								]
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "SET_ETL_BATCH_PROC",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "SET_LOG_PROC",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "etlBatchProc",
+					"value": "ETL.GET_RUN_MASTER_DETAILS"
+				}
+			},
+			{
+				"name": "LKP_GET_BATCH_RUN_DETAILS",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "SET_ETL_BATCH_PROC",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": {
+							"value": "@variables('etlBatchProc')",
+							"type": "Expression"
+						},
+						"storedProcedureParameters": {
+							"pipelineName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().Pipeline",
+									"type": "Expression"
+								}
+							},
+							"dataFactory": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().DataFactory",
+									"type": "Expression"
+								}
+							},
+							"pipelineRunID": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
+							},
+							"batch_GUID": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.batchGUID",
+									"type": "Expression"
+								}
+							},
+							"Status": {
+								"type": "String",
+								"value": null
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "GET_NBS_ADLS_RDV",
+						"type": "DatasetReference",
+						"parameters": {
+							"serverName": {
+								"value": "@pipeline().parameters.serverName",
+								"type": "Expression"
+							},
+							"databaseName": {
+								"value": "@pipeline().parameters.databaseName",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "SET_BATCH_ID",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "LKP_GET_BATCH_RUN_DETAILS",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "etlRunID",
+					"value": {
+						"value": "@activity('LKP_GET_BATCH_RUN_DETAILS').output.firstRow.BATCH_GUID",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "SET_ETL_RUNTIME",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "SET_BATCH_ID",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "etlRunStartTime",
+					"value": {
+						"value": "@activity('LKP_GET_BATCH_RUN_DETAILS').output.firstRow.ETL_RUN_START_DATETIME",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "SET_LOG_PROC",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "etlLogProc",
+					"value": "ETL.INSERT_RUN_DETAILS"
+				}
+			},
+			{
+				"name": "LKP_GET_BATCH_RUN_DETAILS_END_SUCCESS",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "ListObjectsFromOneGroup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": {
+							"value": "@variables('etlBatchProc')",
+							"type": "Expression"
+						},
+						"storedProcedureParameters": {
+							"pipelineName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().Pipeline",
+									"type": "Expression"
+								}
+							},
+							"dataFactory": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().DataFactory",
+									"type": "Expression"
+								}
+							},
+							"pipelineRunID": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
+							},
+							"batch_GUID": {
+								"type": "String",
+								"value": {
+									"value": "@variables('etlRunID')",
+									"type": "Expression"
+								}
+							},
+							"Status": {
+								"type": "String",
+								"value": "Success"
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "GET_NBS_ADLS_RDV",
+						"type": "DatasetReference",
+						"parameters": {
+							"serverName": {
+								"value": "@pipeline().parameters.serverName",
+								"type": "Expression"
+							},
+							"databaseName": {
+								"value": "@pipeline().parameters.databaseName",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "LKP_GET_BATCH_RUN_DETAILS_END_FAILURE",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "ListObjectsFromOneGroup",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": {
+							"value": "@variables('etlBatchProc')",
+							"type": "Expression"
+						},
+						"storedProcedureParameters": {
+							"pipelineName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().Pipeline",
+									"type": "Expression"
+								}
+							},
+							"dataFactory": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().DataFactory",
+									"type": "Expression"
+								}
+							},
+							"pipelineRunID": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
+							},
+							"batch_GUID": {
+								"type": "String",
+								"value": {
+									"value": "@variables('etlRunID')",
+									"type": "Expression"
+								}
+							},
+							"Status": {
+								"type": "String",
+								"value": "Error"
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "GET_NBS_ADLS_RDV",
+						"type": "DatasetReference",
+						"parameters": {
+							"serverName": {
+								"value": "@pipeline().parameters.serverName",
+								"type": "Expression"
+							},
+							"databaseName": {
+								"value": "@pipeline().parameters.databaseName",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"ObjectsPerGroupToCopy": {
+				"type": "Array"
+			},
+			"serverName": {
+				"type": "string"
+			},
+			"databaseName": {
+				"type": "string"
+			},
+			"accountName": {
+				"type": "string"
+			},
+			"sparkPoolName": {
+				"type": "string"
+			},
+			"batchGUID": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"fileName": {
+				"type": "String"
+			},
+			"fileext": {
+				"type": "String"
+			},
+			"fullPath": {
+				"type": "String"
+			},
+			"etlLogProc": {
+				"type": "String",
+				"defaultValue": "ETL.INSERT_RUN_DETAILS"
+			},
+			"etlBatchProc": {
+				"type": "String"
+			},
+			"etlRunID": {
+				"type": "String"
+			},
+			"etlRunStartTime": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "QMA/01_SRC_ADLS/MetadataLandCopyTask_iy5_20220622"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-08-19T06:28:17Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

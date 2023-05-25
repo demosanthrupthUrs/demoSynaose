@@ -1,0 +1,210 @@
+{
+	"name": "NB_ADLS_RDV_TBL_Template",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "azprodspkpool01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "afb1568c-44ca-4997-80e6-03bcd0e340d3"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/d28b0a8d-0b16-416b-a51a-618a5a752781/resourceGroups/rg-as-dmaic-prod/providers/Microsoft.Synapse/workspaces/az-tsa-as-dmaic-prod-synapse-01/bigDataPools/azprodspkpool01",
+				"name": "azprodspkpool01",
+				"type": "Spark",
+				"endpoint": "https://az-tsa-as-dmaic-prod-synapse-01.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/azprodspkpool01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.2",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"tags": [
+						"parameters"
+					]
+				},
+				"source": [
+					"filePath = 'abfss://<containerName>@<StorageAccountName>.dfs.core.windows.net/<containerName>Land/<fileName>.parquet'\r\n",
+					"etlRunID = '<Batch_GUID>'\r\n",
+					"tableName = 'TBL_TargetTableName'\r\n",
+					"\r\n",
+					"schema = 'TargetSchemaName'\r\n",
+					"database = 'TargetDBName'\r\n",
+					"server = 'TargetServerName'"
+				],
+				"execution_count": 11
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"%run /NB_ADLS_RDV_COMMON"
+				],
+				"execution_count": 12
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"path, fileName = os.path.split(filePath)\r\n",
+					"tempTableName, etlLoadID, strloadTime = setTemptableTime(fileName)"
+				],
+				"execution_count": 13
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"collapsed": false
+				},
+				"source": [
+					"strSQL = (\"SELECT \\n\" \r\n",
+					"\"\\t<query including transformation logic and ETL columns values\\n\")\r\n",
+					""
+				],
+				"execution_count": 14
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"df = spark.read.parquet(filePath)\r\n",
+					"df.createOrReplaceTempView(tempTableName)\r\n",
+					"sqlDF = spark.sql(strSQL)"
+				],
+				"execution_count": 15
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dfInsert = set_df_columns_nullable(spark,sqlDF\r\n",
+					",['COL1','COL2']\r\n",
+					",False)\r\n",
+					"dfInsert = set_df_columns_nullable(spark,dfInsert,['COL1','COL2'],True)"
+				],
+				"execution_count": 16
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"if (dfInsert.count() != 0):\r\n",
+					"    insertTarget(dfInsert,server,database,schema,tableName,'overwrite')"
+				],
+				"execution_count": 17
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"rowsRead,rowsWritten = reconInsert(dfInsert,server,database,schema,tableName,etlRunID)\r\n",
+					"outputRows = str(rowsRead)+'|'+str(rowsWritten)\r\n",
+					"mssparkutils.notebook.exit(outputRows) "
+				],
+				"execution_count": 18
+			}
+		]
+	}
+}

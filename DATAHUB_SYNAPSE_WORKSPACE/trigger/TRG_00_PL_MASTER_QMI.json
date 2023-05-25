@@ -1,0 +1,24 @@
+{
+	"name": "TRG_00_PL_MASTER_QMI",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "00_QMI_PL_MASTER",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2022-08-07T04:00:00",
+				"timeZone": "AUS Eastern Standard Time"
+			}
+		}
+	}
+}

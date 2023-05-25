@@ -1,0 +1,21 @@
+{
+	"name": "AZ_TSA_ADLS_BLOB_01",
+	"type": "Microsoft.Synapse/workspaces/linkedservices",
+	"properties": {
+		"parameters": {
+			"accountName": {
+				"type": "String",
+				"defaultValue": "astestdmaicstor01"
+			}
+		},
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "@{concat('https://',linkedService().accountName,'.dfs.core.windows.net')}"
+		},
+		"connectVia": {
+			"referenceName": "AutoResolveIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

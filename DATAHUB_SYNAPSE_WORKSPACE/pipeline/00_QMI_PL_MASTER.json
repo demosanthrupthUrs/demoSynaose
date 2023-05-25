@@ -1,0 +1,1900 @@
+{
+	"name": "00_QMI_PL_MASTER",
+	"properties": {
+		"activities": [
+			{
+				"name": "LKP_GET_ALL_PIPELINES",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "SET_ETL_RUNTIME",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": {
+							"value": "@variables('storeProc')",
+							"type": "Expression"
+						},
+						"storedProcedureParameters": {
+							"pipelineName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().Pipeline",
+									"type": "Expression"
+								}
+							},
+							"dataFactory": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().DataFactory",
+									"type": "Expression"
+								}
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "GET_NBS_ADLS_RDV",
+						"type": "DatasetReference",
+						"parameters": {
+							"serverName": {
+								"value": "@variables('serverName')",
+								"type": "Expression"
+							},
+							"databaseName": {
+								"value": "@variables('databaseName')",
+								"type": "Expression"
+							}
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "FE_PIPELINES",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LKP_GET_ALL_PIPELINES",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LKP_GET_ALL_PIPELINES').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Switch1",
+							"type": "Switch",
+							"dependsOn": [
+								{
+									"activity": "SET_PIPELINE_NAME",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"on": {
+									"value": "@variables('pipelineName')",
+									"type": "Expression"
+								},
+								"cases": [
+									{
+										"value": "MetadataLandCopyTask_iy5_TopLevel",
+										"activities": [
+											{
+												"name": "EX_PL_METADATA_COPY",
+												"type": "ExecutePipeline",
+												"dependsOn": [
+													{
+														"activity": "START_LOG",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "MetadataLandCopyTask_iy5_TopLevel",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														},
+														"accountName": {
+															"value": "@variables('accountName')",
+															"type": "Expression"
+														},
+														"sparkPoolName": {
+															"value": "@variables('sparkPoolName')",
+															"type": "Expression"
+														},
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"batchGUID": {
+															"value": "@variables('etlRunID')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "START_LOG",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_METADATA_COPY",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": null,
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Start",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "END_LOG_SUCCESS",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "EX_PL_METADATA_COPY",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_METADATA_COPY",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": {
+																"value": "@activity('EX_PL_METADATA_COPY').output",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Success",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "END_LOG_FAILURE",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "EX_PL_METADATA_COPY",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_METADATA_COPY",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": {
+																"value": "@activity('EX_PL_METADATA_COPY').Error.Message",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Failure",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									},
+									{
+										"value": "01_PL_QMI_ADLS_RDV_IN_NB",
+										"activities": [
+											{
+												"name": "EX_PL_02_ADLS_RDV",
+												"type": "ExecutePipeline",
+												"dependsOn": [
+													{
+														"activity": "START_LOG_NBS",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "01_PL_QMI_ADLS_RDV_IN_NB",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														},
+														"accountName": {
+															"value": "@variables('accountName')",
+															"type": "Expression"
+														},
+														"sparkPoolName": {
+															"value": "@variables('sparkPoolName')",
+															"type": "Expression"
+														},
+														"batchGUID": {
+															"value": "@variables('etlRunID')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "START_LOG_NBS",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_02_ADLS_RDV",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": null,
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Start",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "END_LOG_SUCCESS_NBS",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "EX_PL_02_ADLS_RDV",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_02_ADLS_RDV",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": {
+																"value": "@activity('EX_PL_02_ADLS_RDV').output",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Success",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "END_LOG_FAILURE_NBS",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "EX_PL_02_ADLS_RDV",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_02_ADLS_RDV",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": {
+																"value": "@activity('EX_PL_02_ADLS_RDV').Error.Message",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Failure",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									},
+									{
+										"value": "01_PL_QMI_RDV_PRES_IN_SP",
+										"activities": [
+											{
+												"name": "EX_PL_03_RDV_PRES",
+												"type": "ExecutePipeline",
+												"dependsOn": [
+													{
+														"activity": "START_LOG_SPS",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "01_PL_QMI_RDV_PRES_IN_SP",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														},
+														"accountName": {
+															"value": "@variables('accountName')",
+															"type": "Expression"
+														},
+														"sparkPoolName": {
+															"value": "@variables('sparkPoolName')",
+															"type": "Expression"
+														},
+														"batchGUID": {
+															"value": "@variables('etlRunID')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "START_LOG_SPS",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_03_RDV_PRES",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": null,
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Start",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "END_LOG_SUCCESS_SPS",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "EX_PL_03_RDV_PRES",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_03_RDV_PRES",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": {
+																"value": "@activity('EX_PL_03_RDV_PRES').output",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Success",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "END_LOG_FAILURE_SPS",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "EX_PL_03_RDV_PRES",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_03_RDV_PRES",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": {
+																"value": "@activity('EX_PL_03_RDV_PRES').Error.Message",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Failure",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									},
+									{
+										"value": "01_PL_QMI_RDV_ADLS_IN_NB",
+										"activities": [
+											{
+												"name": "EX_PL_04_RDV_ADLS",
+												"type": "ExecutePipeline",
+												"dependsOn": [
+													{
+														"activity": "START_LOG_NBS_EXL",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "01_PL_QMI_RDV_ADLS_IN_NB",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														},
+														"accountName": {
+															"value": "@variables('accountName')",
+															"type": "Expression"
+														},
+														"sparkPoolName": {
+															"value": "@variables('sparkPoolName')",
+															"type": "Expression"
+														},
+														"batchGUID": {
+															"value": "@variables('etlRunID')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "START_LOG_NBS_EXL",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_04_RDV_ADLS",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": null,
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Start",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "END_LOG_SUCCESS_NBS_EXL",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "EX_PL_04_RDV_ADLS",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_04_RDV_ADLS",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": {
+																"value": "@activity('EX_PL_04_RDV_ADLS').output",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Success",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "END_LOG_FAILURE_NBS_EXL",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "EX_PL_04_RDV_ADLS",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": {
+														"value": "@variables('etlLogProc')",
+														"type": "Expression"
+													},
+													"storedProcedureParameters": {
+														"ActivityName": {
+															"value": "EX_PL_04_RDV_ADLS",
+															"type": "String"
+														},
+														"pipelineRunID": {
+															"value": {
+																"value": "@pipeline().RunId",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"batch_GUID": {
+															"value": {
+																"value": "@variables('etlRunID')",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"rowsRead": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsWritten": {
+															"value": null,
+															"type": "Int64"
+														},
+														"activityMessage": {
+															"value": {
+																"value": "@activity('EX_PL_04_RDV_ADLS').Error.Message",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"activityRunStatus": {
+															"value": "Failure",
+															"type": "String"
+														},
+														"rowsUpdated": {
+															"value": null,
+															"type": "Int64"
+														},
+														"rowsDeleted": {
+															"value": null,
+															"type": "Int64"
+														},
+														"expReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconValue": {
+															"value": null,
+															"type": "Int64"
+														},
+														"actualReconStatus": {
+															"value": null,
+															"type": "String"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "AZ_TSA_SYNAPSE_DED_SQL_POOL",
+													"type": "LinkedServiceReference",
+													"parameters": {
+														"serverName": {
+															"value": "@variables('serverName')",
+															"type": "Expression"
+														},
+														"databaseName": {
+															"value": "@variables('databaseName')",
+															"type": "Expression"
+														}
+													}
+												}
+											}
+										]
+									}
+								]
+							}
+						},
+						{
+							"name": "SET_PIPELINE_NAME",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "pipelineName",
+								"value": {
+									"value": "@item().PIPELINE_NAME",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "SET_DATABASE_NAME",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "SET_SERVER_NAME",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "databaseName",
+					"value": {
+						"value": "@concat('aztsaasdmaic',if(contains(pipeline().DataFactory,'dev'),'dev',if(contains(pipeline().DataFactory,'test'),'test','prod')),'sqlpools01')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "SET_ACCOUNT_NAME",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "SET_DATABASE_NAME",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "accountName",
+					"value": {
+						"value": "@concat('as',if(contains(pipeline().DataFactory,'dev'),'dev',if(contains(pipeline().DataFactory,'test'),'test','prod')),'dmaicstor01')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "SET_SERVER_NAME",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "SET_ETL_PIPELINE_PROC",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "serverName",
+					"value": {
+						"value": "@concat(pipeline().DataFactory,'.sql.azuresynapse.net')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "SET_SPARK_POOL_NAME",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "SET_ACCOUNT_NAME",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "sparkPoolName",
+					"value": {
+						"value": "@concat('az',if(contains(pipeline().DataFactory,'dev'),'dev',if(contains(pipeline().DataFactory,'test'),'test','prod')),'spkpool01')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "SET_ETL_PIPELINE_PROC",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "SET_ETL_BATCH_PROC",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "storeProc",
+					"value": "ETL.SP_GET_ETL_PIPELINES"
+				}
+			},
+			{
+				"name": "SET_ETL_BATCH_PROC",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "SET_LOG_PROC",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "etlBatchProc",
+					"value": "ETL.GET_RUN_MASTER_DETAILS"
+				}
+			},
+			{
+				"name": "LKP_GET_BATCH_RUN_DETAILS",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "SET_SPARK_POOL_NAME",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": {
+							"value": "@variables('etlBatchProc')",
+							"type": "Expression"
+						},
+						"storedProcedureParameters": {
+							"pipelineName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().Pipeline",
+									"type": "Expression"
+								}
+							},
+							"dataFactory": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().DataFactory",
+									"type": "Expression"
+								}
+							},
+							"pipelineRunID": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
+							},
+							"batch_GUID": {
+								"type": "Guid",
+								"value": null
+							},
+							"Status": {
+								"type": "String",
+								"value": null
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "GET_NBS_ADLS_RDV",
+						"type": "DatasetReference",
+						"parameters": {
+							"serverName": {
+								"value": "@variables('serverName')",
+								"type": "Expression"
+							},
+							"databaseName": {
+								"value": "@variables('databaseName')",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "SET_BATCH_ID",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "LKP_GET_BATCH_RUN_DETAILS",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "etlRunID",
+					"value": {
+						"value": "@activity('LKP_GET_BATCH_RUN_DETAILS').output.firstRow.BATCH_GUID",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "SET_ETL_RUNTIME",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "SET_BATCH_ID",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "etlStartTime",
+					"value": {
+						"value": "@activity('LKP_GET_BATCH_RUN_DETAILS').output.firstRow.ETL_RUN_START_DATETIME",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "LKP_GET_BATCH_RUN_DETAILS_END_SUCCESS",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "FE_PIPELINES",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": {
+							"value": "@variables('etlBatchProc')",
+							"type": "Expression"
+						},
+						"storedProcedureParameters": {
+							"pipelineName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().Pipeline",
+									"type": "Expression"
+								}
+							},
+							"dataFactory": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().DataFactory",
+									"type": "Expression"
+								}
+							},
+							"pipelineRunID": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
+							},
+							"batch_GUID": {
+								"type": "String",
+								"value": {
+									"value": "@variables('etlRunID')",
+									"type": "Expression"
+								}
+							},
+							"Status": {
+								"type": "String",
+								"value": "Success"
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "GET_NBS_ADLS_RDV",
+						"type": "DatasetReference",
+						"parameters": {
+							"serverName": {
+								"value": "@variables('serverName')",
+								"type": "Expression"
+							},
+							"databaseName": {
+								"value": "@variables('databaseName')",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "SET_LOG_PROC",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "etlLogProc",
+					"value": "ETL.INSERT_RUN_DETAILS"
+				}
+			},
+			{
+				"name": "LKP_GET_BATCH_RUN_DETAILS_END_FAILURE",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "FE_PIPELINES",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlDWSource",
+						"sqlReaderStoredProcedureName": {
+							"value": "@variables('etlBatchProc')",
+							"type": "Expression"
+						},
+						"storedProcedureParameters": {
+							"pipelineName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().Pipeline",
+									"type": "Expression"
+								}
+							},
+							"dataFactory": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().DataFactory",
+									"type": "Expression"
+								}
+							},
+							"pipelineRunID": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
+							},
+							"batch_GUID": {
+								"type": "String",
+								"value": {
+									"value": "@variables('etlRunID')",
+									"type": "Expression"
+								}
+							},
+							"Status": {
+								"type": "String",
+								"value": "Error"
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "GET_NBS_ADLS_RDV",
+						"type": "DatasetReference",
+						"parameters": {
+							"serverName": {
+								"value": "@variables('serverName')",
+								"type": "Expression"
+							},
+							"databaseName": {
+								"value": "@variables('databaseName')",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			}
+		],
+		"variables": {
+			"pipelineName": {
+				"type": "String"
+			},
+			"Counter": {
+				"type": "String"
+			},
+			"serverName": {
+				"type": "String"
+			},
+			"databaseName": {
+				"type": "String"
+			},
+			"accountName": {
+				"type": "String"
+			},
+			"sparkPoolName": {
+				"type": "String"
+			},
+			"storeProc": {
+				"type": "String"
+			},
+			"etlBatchProc": {
+				"type": "String"
+			},
+			"etlRunID": {
+				"type": "String"
+			},
+			"etlStartTime": {
+				"type": "String"
+			},
+			"etlLogProc": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "QMA/00_MASTER"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-08-19T06:28:35Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}
