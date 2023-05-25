@@ -1,0 +1,7 @@
+{
+	"name": "synapse-ws-custstgacct--demoworkspaceaeast-stgacctdemoaeast",
+	"properties": {
+		"privateLinkResourceId": "/subscriptions/824ccc0a-ee7e-49b0-a06f-18605b1919d7/resourceGroups/demo-rg-aeast/providers/Microsoft.Storage/storageAccounts/stgacctdemoaeast",
+		"groupId": "dfs"
+	}
+}
