@@ -5,7 +5,7 @@
 		"parameters": {
 			"accountName": {
 				"type": "String",
-				"defaultValue": "astestdmaicstor01"
+				"defaultValue": "stgacctdemoaeast"
 			}
 		},
 		"annotations": [],
