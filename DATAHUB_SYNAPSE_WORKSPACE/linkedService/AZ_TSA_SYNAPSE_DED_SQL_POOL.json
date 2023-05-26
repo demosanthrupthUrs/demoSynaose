@@ -5,11 +5,11 @@
 		"parameters": {
 			"serverName": {
 				"type": "String",
-				"defaultValue": "az-tsa-as-dmaic-test-synapse-01.sql.azuresynapse.net"
+				"defaultValue": "demoworkspaceaeast.sql.azuresynapse.net"
 			},
 			"databaseName": {
 				"type": "String",
-				"defaultValue": "aztsaasdmaictestsqlpools01"
+				"defaultValue": "ETL_MASTER"
 			}
 		},
 		"annotations": [],
